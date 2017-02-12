@@ -61,7 +61,7 @@ $(function() {
 
     function bindInt(simp) {
         setBW(simp);
-        if (simp.dim == 1) elem = $(simp.rect._renderer.elem);
+        if (simp.dim == 1) { elem = $(simp.rect._renderer.elem); console.log('hey'); }
         else elem = $(simp._renderer.elem);
         elem.bind('mouseover.int', function(e) {
             if (simp.inInt) setBW(simp);
@@ -75,13 +75,13 @@ $(function() {
             var simpVal;
             if (simp.inInt) {
                 simpVal = -simp.fVal;
-                if (simp.dim == 1) newVal *= -1;
+                if (simp.dim == 1) simpVal *= -1;
                 simp.inInt = false;
                 setBW(simp);
             }
             else {
                 simpVal = simp.fVal;
-                if (simp.dim == 1) newVal *= -1;
+                if (simp.dim == 1) simpVal *= -1;
                 simp.inInt = true;
                 setColor(simp);
             }
