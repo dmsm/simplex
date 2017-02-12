@@ -1,0 +1,54 @@
+<html>
+<head>
+    <title>SimpleX</title>
+
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/two.min.js"></script>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+      MathJax.Hub.Config({
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX","output/HTML-CSS"],
+        tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+      });
+    </script>
+    <script type="text/javascript" src="js/simplexes.js"></script>
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    
+</head>
+
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div id="canvas" class="col-sm-8"></div>
+            <div class="col-sm-4 scroll">
+                <div id="sidebar">
+                    <div id="sidebar-content">
+                        <h1>SimpleX</h1> 
+                        <label for="f-val">$h(\sigma)=$</label>
+                        <input type="text" id="f-val"></input>
+                        <div id="controls">
+                            <button id="extend" type="button" class="btn btn-default" disabled>
+                                Extend vertices
+                            </button>
+                            <button id="dual" type="button" class="btn btn-default" disabled>
+                                Compute dual
+                            </button>
+                            <div class="btn-group" data-toggle="buttons">
+                                <label class="btn btn-default disabled">
+                                    <input id="integrate" type="checkbox" autocomplete="off"> Integrate
+                                </label>
+                            </div>
+                        <div id="integral" hidden="true">
+                            $$\int_X h\ \operatorname{d}\chi = 0$$
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
