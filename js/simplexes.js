@@ -2,7 +2,7 @@ var RADIUS = 10;
 var LINEWIDTH = RADIUS/4;
 var GRAY = '#D3D3D3';
 var REC_LIM = 4;
-var INT_TEX = "\\int_X h\\ \\operatorname{d}\\chi = "
+var INT_TEX = "\\int_X f\\ \\operatorname{d}\\chi = "
 
 $(function() {
     var QUEUE = MathJax.Hub.queue;  // shorthand for the queue
@@ -61,7 +61,7 @@ $(function() {
 
     function bindInt(simp) {
         setBW(simp);
-        if (simp.dim == 1) { elem = $(simp.rect._renderer.elem); console.log('hey'); }
+        if (simp.dim == 1) elem = $(simp.rect._renderer.elem);
         else elem = $(simp._renderer.elem);
         elem.bind('mouseover.int', function(e) {
             if (simp.inInt) setBW(simp);
@@ -398,6 +398,7 @@ $(function() {
                                 if (k > j) {
                                     $.each(adj[k], function(_l, l) {
                                         if (i == l) {
+                                            console.log('hy');
                                             var a = verts.children[i].translation,
                                                 b = verts.children[j].translation,
                                                 c = verts.children[k].translation
@@ -449,21 +450,23 @@ $(function() {
 
                 $("#integrate").bind('change', function(e) {
                     e.preventDefault();
-                    if (this.checked) {
-                        $("#extend").prop("disabled", true);
-                        $("#dual").prop("disabled", true);
-                        $("#integral").show();
-                        $.each($.merge($.merge($.merge([], verts.children), edges.children), tris.children), function (i, simp) {
-                            bindInt(simp);
-                        });
-                    }
-                    else {
-                        $("#extend").prop("disabled", false);
-                        $("#dual").prop("disabled", false);
-                        $("#integral").hide();
-                        $.each($.merge($.merge($.merge([], verts.children), edges.children), tris.children), function (i, simp) {
-                            unbindInt(simp);
-                        });
+                    if (!$(this).parent().hasClass("disabled")) {
+                        if (this.checked) {
+                            $("#extend").prop("disabled", true);
+                            $("#dual").prop("disabled", true);
+                            $("#integral").show();
+                            $.each($.merge($.merge($.merge([], verts.children), edges.children), tris.children), function (i, simp) {
+                                bindInt(simp);
+                            });
+                        }
+                        else {
+                            $("#extend").prop("disabled", false);
+                            $("#dual").prop("disabled", false);
+                            $("#integral").hide();
+                            $.each($.merge($.merge($.merge([], verts.children), edges.children), tris.children), function (i, simp) {
+                                unbindInt(simp);
+                            });
+                        }
                     }
                 }).parent().removeClass("disabled");
                 $("#extend").prop("disabled", false).bind('click', function(e) {
