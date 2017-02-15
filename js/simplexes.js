@@ -1,8 +1,18 @@
 var RADIUS = 10;
 var LINEWIDTH = RADIUS/4;
 var GRAY = '#D3D3D3';
-var REC_LIM = 4;
+var RESOLUTION = 4;
 var INT_TEX = "\\int_X f\\ \\operatorname{d}\\chi = "
+var POS_COLOR = {
+    R : 210,
+    G : 120,
+    B : 5
+};
+var NEG_COLOR = {
+    R : 20,
+    G : 54,
+    B : 109
+};
 
 $(function() {
     var QUEUE = MathJax.Hub.queue;  // shorthand for the queue
@@ -39,18 +49,70 @@ $(function() {
 
     var maxF = -Infinity;
     
+    createGrid();
+
     $fVal.focus();
-    
-    function addVertex(e) {
+
+    var vertMarker = two.makeCircle(0, 0, RADIUS);
+    vertMarker.fill = 'black';
+    vertMarker.opacity = 0.2;
+    vertMarker.noStroke();
+    $canvas.mousemove(function(e) {
+        e.preventDefault();
         mouse.x = e.clientX - offset.left;
         mouse.y = e.clientY - offset.top;
-
+        vertMarker.translation.set(mouse.x, mouse.y);
+        two.update();
+    });
+    label = new Two.Text("Click to add a vertex. Press enter to start adding edges.", two.width/2, two.height - 50, {family: "'Helvetica Neue', Helvetica, Arial, sans-serif"});
+    label.fill = 'black';
+    label.size = 20;
+    two.add(label);
+    
+    function addVertex(e) {
         var fVal = parseInt($fVal.val());
         if (Number.isInteger(fVal)) {
             var vert = two.makeCircle(mouse.x, mouse.y, RADIUS);
             vert.fVal = fVal;
             vert.dim = 0;
             vert.placed = true;
+
+            $.each(verts.children, function(i, vert2) {
+                var a = vert.translation,
+                    b = vert2.translation;
+                var edge = two.makeLine(a.x, a.y, b.x, b.y);
+
+                var v = new Two.Vector(-edge.vertices[0].y, edge.vertices[0].x);
+                var u = new Two.Vector(edge.vertices[0].x, edge.vertices[0].y);
+                var pt = new Two.Vector();
+                var rect = two.makePath();
+                v.setLength(RADIUS);
+                pt.add(v, u);
+                v.multiplyScalar(2);
+                u.multiplyScalar(2);
+                rect.vertices.push(new Two.Anchor(pt.x, pt.y));
+                pt.subSelf(v);
+                rect.vertices.push(new Two.Anchor(pt.x, pt.y));
+                pt.subSelf(u);
+                rect.vertices.push(new Two.Anchor(pt.x, pt.y));
+                pt.addSelf(v);
+                rect.vertices.push(new Two.Anchor(pt.x, pt.y));
+                rect.translation.copy(edge.translation);
+                rect.noStroke().noFill();
+                rects.add(rect);
+
+                edge.stroke = GRAY;
+                edge.opacity = 0;
+                edge.faces = [verts.children.length, i];
+                edge.linewidth = LINEWIDTH;
+                edge.dim = 1;
+                edge.placed = false;
+                edges.add(edge);
+
+                two.update();
+                edge.rect = rect;
+            });
+
             verts.add(vert);
             recolor(fVal);
         }
@@ -129,13 +191,18 @@ $(function() {
 
     function setColor(simp) {
         if (simp.fVal > 0) {
-            var gb = 255 - Math.round(255 * simp.fVal / maxF);
-            simp.stroke = simp.fill = 'rgb(255, ' + gb + ', ' + gb + ')';
+            var ratio = simp.fVal / maxF;
+            var r = Math.round(POS_COLOR.R + (1-ratio) * (255-POS_COLOR.R));
+            var g = Math.round(POS_COLOR.G + (1-ratio) * (255-POS_COLOR.G));
+            var b = Math.round(POS_COLOR.B + (1-ratio) * (255-POS_COLOR.B));
         }
         else {
-            var rg = 255 - Math.round(255 * simp.fVal / (-maxF));
-            simp.stroke = simp.fill = 'rgb(' + rg + ', ' + rg + ', 255)';
+            var ratio = -simp.fVal / maxF;
+            var r = Math.round(NEG_COLOR.R + (1-ratio) * (255-NEG_COLOR.R));
+            var g = Math.round(NEG_COLOR.G + (1-ratio) * (255-NEG_COLOR.G));
+            var b = Math.round(NEG_COLOR.B + (1-ratio) * (255-NEG_COLOR.B));
         }
+            simp.stroke = simp.fill = 'rgb(' + r + ', ' + g + ', ' + b + ')';
         two.update();
     }
 
@@ -168,7 +235,7 @@ $(function() {
         auxEdges.add(e1, e2);
         auxEdges.remove(edge);
 
-        if (i == REC_LIM) {
+        if (i == RESOLUTION) {
             e1.fVal = calcEF(realEdge, e1.translation.x, e1.translation.y);
             setColor(e1);
             e2.fVal = calcEF(realEdge, e2.translation.x, e2.translation.y);
@@ -177,7 +244,7 @@ $(function() {
 
         two.update();
 
-        if (i < REC_LIM) {
+        if (i < RESOLUTION) {
             subdivEdge(e1, i+1, realEdge);
             subdivEdge(e2, i+1, realEdge);
         }
@@ -231,7 +298,7 @@ $(function() {
         auxTris.add(t1, t2, t3, t4);
         auxTris.remove(tri)
 
-        if (i == REC_LIM) {
+        if (i == RESOLUTION) {
             t1.fVal = calcTF(realTri, t1.translation.x, t1.translation.y);
             setColor(t1);
             t2.fVal = calcTF(realTri, t2.translation.x, t2.translation.y);
@@ -244,7 +311,7 @@ $(function() {
 
         two.update();
 
-        if (i < REC_LIM) {
+        if (i < RESOLUTION) {
             subdivTri(t1, i+1, realTri);
             subdivTri(t2, i+1, realTri);
             subdivTri(t3, i+1, realTri);
@@ -326,55 +393,22 @@ $(function() {
             e.cofaces = [];
         });
         $.each(tris.children, function(i, t) {
-            edges.children[t.oneFaces[0]].cofaces.push(i);
-            edges.children[t.oneFaces[1]].cofaces.push(i);
-            edges.children[t.oneFaces[2]].cofaces.push(i);
+            $.each(t.oneFaces, function(j, edge) {            
+                edge.cofaces.push(i);
+            });
         });
     }
 
     function endStage() {
         switch (stage) {
             case 1:
-                for (var i = 0; i < verts.children.length; i++) {
-                    for (var j = i+1; j < verts.children.length; j++) {
-                        var a = verts.children[i].translation,
-                            b = verts.children[j].translation;
-                        var edge = two.makeLine(a.x, a.y, b.x, b.y);
-
-                        var v = new Two.Vector(-edge.vertices[0].y, edge.vertices[0].x);
-                        var u = new Two.Vector(edge.vertices[0].x, edge.vertices[0].y);
-                        var pt = new Two.Vector();
-                        var rect = two.makePath();
-                        v.setLength(RADIUS);
-                        pt.add(v, u);
-                        v.multiplyScalar(2);
-                        u.multiplyScalar(2);
-                        rect.vertices.push(new Two.Anchor(pt.x, pt.y));
-                        pt.subSelf(v);
-                        rect.vertices.push(new Two.Anchor(pt.x, pt.y));
-                        pt.subSelf(u);
-                        rect.vertices.push(new Two.Anchor(pt.x, pt.y));
-                        pt.addSelf(v);
-                        rect.vertices.push(new Two.Anchor(pt.x, pt.y));
-                        rect.translation.copy(edge.translation);
-                        rect.noStroke().noFill();
-                        rects.add(rect);
-
-                        edge.stroke = GRAY;
-                        edge.opacity = 0;
-                        edge.faces = [i, j];
-                        edge.linewidth = LINEWIDTH;
-                        edge.dim = 1;
-                        edge.placed = false;
-                        edges.add(edge);
-
-                        two.update();
-                        edge.rect = rect;
-                        bindEdge(edge);
-                    }
-                }
+                two.remove(vertMarker);
+                $.each(edges.children, function(i, edge) {
+                    bindEdge(edge);
+                });
                 
-                $canvas.unbind('mousedown');
+                label.value = "Click to add an edge. Press enter to start adding faces.";
+                $canvas.unbind();
                 stage = 2;
                 break;
 
@@ -388,54 +422,13 @@ $(function() {
                     }
                 });
                 edges.remove(edgesToRemove);
-                rects.remove(rectsToRemove);
+                rects.remove(rectsToRemove); 
 
-                $.each(adj, function(i, js) {
-                    i = parseInt(i);
-                    $.each(js, function (_j, j) {
-                        if (j > i) {
-                            $.each(adj[j], function(_k, k) {
-                                if (k > j) {
-                                    $.each(adj[k], function(_l, l) {
-                                        if (i == l) {
-                                            console.log('hy');
-                                            var a = verts.children[i].translation,
-                                                b = verts.children[j].translation,
-                                                c = verts.children[k].translation
-                                            var containsVert = false;
-                                            $.each(verts.children, function(x, v) {
-                                                if (!(x in [i, j, k]))
-                                                    containsVert = containsVert || pInTri(v.translation.x, v.translation.y, a.x, a.y, b.x, b.y, c.x, c.y);
-                                            });
-                                            if (!containsVert) {
-                                                var tri = two.makePath(a.x, a.y, b.x, b.y, c.x, c.y);
-                                                tri.noStroke();
-                                                tri.fill = GRAY;
-                                                tri.opacity = 0;
-                                                tri.dim = 2;
-                                                tri.placed = false;
-
-                                                var faces = [];
-                                                $.each(edges.children, function(e, edge) {
-                                                    if ([i, j, k].includes(edge.faces[0]) && [i, j, k].includes(edge.faces[1]))
-                                                        faces.push(e);
-                                                });
-                                                tri.oneFaces = faces;
-                                                tri.zeroFaces = [i, j, k];
-
-                                                tris.add(tri);
-
-                                                two.update();
-                                                bindTri(tri);
-                                            }
-                                        }
-                                    })
-                                }
-                            })
-                        }
-                    })
+                $.each(tris.children, function(i, tri) {
+                    bindTri(tri);
                 });
 
+                label.value = "Click to add a face. Press enter to finish.";
                 stage = 3;
                 break;
 
@@ -452,6 +445,7 @@ $(function() {
                     e.preventDefault();
                     if (!$(this).parent().hasClass("disabled")) {
                         if (this.checked) {
+                            label.value = "Click on a simplex to add it to X.";
                             $("#extend").prop("disabled", true);
                             $("#dual").prop("disabled", true);
                             $("#integral").show();
@@ -460,6 +454,7 @@ $(function() {
                             });
                         }
                         else {
+                            label.value = "";
                             $("#extend").prop("disabled", false);
                             $("#dual").prop("disabled", false);
                             $("#integral").hide();
@@ -502,6 +497,8 @@ $(function() {
                     });
                 });
 
+                label.value = "";
+
                 break;
         }
 
@@ -526,19 +523,53 @@ $(function() {
             edge.fVal = fVal;
             recolor(fVal);
 
-            var a = edge.faces[0],
-                b = edge.faces[1];
-            if (a in adj) adj[a].push(b);
-            else adj[a] = [b];
-            if (b in adj) adj[b].push(a);
-            else adj[b] = [a];
+            var i = edge.faces[0],
+                j = edge.faces[1];
+
+            if (i in adj && j in adj) {
+                $.each(adj[i], function (_k, k) {
+                    if ($.inArray(k, adj[j]) > -1) {
+                        var a = verts.children[i].translation,
+                            b = verts.children[j].translation,
+                            c = verts.children[k].translation
+                        var containsVert = false;
+                        $.each(verts.children, function(x, v) {
+                            if ($.inArray(x, [i, j, k]) == -1)
+                                containsVert = containsVert || pInTri(v.translation.x, v.translation.y, a.x, a.y, b.x, b.y, c.x, c.y);
+                        });
+                        if (!containsVert) {
+                            var tri = two.makePath(a.x, a.y, b.x, b.y, c.x, c.y);
+                            tri.noStroke();
+                            tri.fill = GRAY;
+                            tri.opacity = 0;
+                            tri.dim = 2;
+                            tri.placed = false;
+
+                            var faces = [];
+                            $.each(edges.children, function(e, edge) {
+                                if ([i, j, k].includes(edge.faces[0]) && [i, j, k].includes(edge.faces[1]))
+                                    faces.push(edge);
+                            });
+                            tri.oneFaces = faces;
+                            tri.zeroFaces = [i, j, k];
+
+                            tris.add(tri);
+                        }
+                    }
+                });
+            }
+
+            if (i in adj) adj[i].push(j);
+            else adj[i] = [j];
+            if (j in adj) adj[j].push(i);
+            else adj[j] = [i];
 
             $(edge.rect._renderer.elem).unbind();
 
             var rectsToRemove = [];
             var edgesToRemove = [];
-            $.each(edges.children, function(i, tempEdge) {
-                if (doIntersect(verts.children[a].translation, verts.children[b].translation, verts.children[tempEdge.faces[0]].translation, verts.children[tempEdge.faces[1]].translation)) {
+            $.each(edges.children, function(_tempEdge, tempEdge) {
+                if (doIntersect(verts.children[i].translation, verts.children[j].translation, verts.children[tempEdge.faces[0]].translation, verts.children[tempEdge.faces[1]].translation)) {
                     rectsToRemove.push(tempEdge.rect);
                     edgesToRemove.push(tempEdge);
                 }
@@ -574,6 +605,29 @@ $(function() {
         });
     }
 
+      function createGrid(s) {
+
+        var size = s || 30;
+        var two = new Two({
+          type: Two.Types.canvas,
+          width: size,
+          height: size
+        });
+
+        var a = two.makeLine(two.width / 2, 0, two.width / 2, two.height);
+        var b = two.makeLine(0, two.height / 2, two.width, two.height / 2);
+        a.stroke = b.stroke = '#e5efff';
+
+        two.update();
+
+        _.defer(function() {
+          $canvas.css({
+            background: 'url(' + two.renderer.domElement.toDataURL('image/png') + ') 0 0 repeat',
+            backgroundSize: size + 'px ' + size + 'px'
+          });
+        });
+
+      }
 
 });
 
