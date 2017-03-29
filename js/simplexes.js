@@ -40,6 +40,7 @@ $(() => {
 
         $canvas.contextmenu(e => { e.preventDefault() });
         $("#reset").click(reset);
+        $("#compute-reeb").hide();
 
         createGrid();
         stage = 1;
@@ -594,13 +595,17 @@ $(() => {
                         }
                     }
                 }).parent().removeClass("disabled");
-                $("#extend").prop("disabled", false).on("click", () => {
+                $("#extend").prop("disabled", false).click(() => {
                     $("#integrate").parent().addClass("disabled");
                     $("#dual").prop("disabled", true);
                     edges.children.forEach(edge => { extendEdge(edge); });
                     tris.children.forEach(tri => { extendTri(tri); });
-                    computeReeb();
+                    $("#compute-reeb").show();
                     $("#extend").prop("disabled", true);
+                });
+                $("#compute-reeb").click(() => {
+                    $("#compute-reeb").hide();
+                    computeReeb();
                 });
                 $("#dual").prop("disabled", false).on("click", () => {
                     computeDual()
