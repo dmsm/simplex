@@ -8,8 +8,16 @@ h1 {
 #sidebar-content {
     text-align: center;
 }
-svg {
+#canvas svg {
     border-width: 0 1px;
     border-color: black;
     border-style: solid;
+}
+.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+.graph {
+    margin-top: 20px;
 }
