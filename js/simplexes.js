@@ -514,6 +514,7 @@ $(() => {
     } 
 
     function computeDual() {
+        maxF = -Infinity;
         verts.children.forEach(vert => {
             var fVal = vert.fVal;
             $.merge($.merge([], vert.lowerEdges), vert.upperEdges).forEach(edge => {
