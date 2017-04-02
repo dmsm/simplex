@@ -28,7 +28,7 @@ $(() => {
         $fVal = $("#f-val");
     var offset  = $canvas.offset();
 
-    var stage, maxF, intVal, label, vertMarker, auxTris, tris, edges, rects, verts, mouse;
+    var stage, maxF, lastF, intVal, label, vertMarker, auxTris, tris, edges, rects, verts, mouse;
 
     $(document).keypress(e => { if(e.which == 13) endStage(); });
 
@@ -87,6 +87,7 @@ $(() => {
         var fVal = parseFloat($fVal.val());
         if (!isNaN(fVal)) {
             var vert = two.makeCircle(mouse.x, mouse.y, RADIUS);
+            lastF = fVal;
             vert.fVal = fVal;
             vert.dim = 0;
             vert.adj = [];
@@ -137,7 +138,7 @@ $(() => {
             recolor(fVal);
         }
 
-        $fVal.val(maxF).select();
+        $fVal.val(lastF).select();
         two.update();
     }
 
@@ -643,7 +644,8 @@ $(() => {
         }).mousedown(e => {
             e.preventDefault();
             var fVal = parseInt($fVal.val());
-            edge.placed = true
+            edge.placed = true;
+            lastF = fVal;
             edge.fVal = fVal;
             edge.cofaces = [];
             edge.isEquiedge = false;
@@ -720,7 +722,7 @@ $(() => {
             edges.remove(edgesToRemove);
             rects.remove(rectsToRemove);
 
-            $fVal.val(maxF).select();
+            $fVal.val(lastF).select();
             two.update();
         });
     }
@@ -735,12 +737,13 @@ $(() => {
         }).mousedown(e => {
             e.preventDefault();
             var fVal = parseInt($fVal.val());
+            lastF = fVal;
             tri.placed = true;
             tri.fVal = fVal;
             tri.oneFaces.forEach(edge => { edge.cofaces.push(tri); });
             tri.zeroFaces.forEach(vert => { vert.cotris.push(tri); });
             recolor(fVal);
-            $fVal.val(maxF).select();
+            $fVal.val(lastF).select();
 
             $(tri._renderer.elem).unbind();
         });
