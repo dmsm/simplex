@@ -84,7 +84,7 @@ $(() => {
     }
 
     function addVertex(e) {
-        var fVal = parseFloat($fVal.val());
+        var fVal = parseInt($fVal.val());
         if (!isNaN(fVal)) {
             var vert = two.makeCircle(mouse.x, mouse.y, RADIUS);
             lastF = fVal;
@@ -644,86 +644,88 @@ $(() => {
         }).mousedown(e => {
             e.preventDefault();
             var fVal = parseInt($fVal.val());
-            edge.placed = true;
-            lastF = fVal;
-            edge.fVal = fVal;
-            edge.cofaces = [];
-            edge.isEquiedge = false;
-            recolor(fVal);
+            if (!isNaN(fVal)) {
+                edge.placed = true;
+                lastF = fVal;
+                edge.fVal = fVal;
+                edge.cofaces = [];
+                edge.isEquiedge = false;
+                recolor(fVal);
 
-            var i = edge.faces[0],
-                j = edge.faces[1];
+                var i = edge.faces[0],
+                    j = edge.faces[1];
 
-            if (i.fVal > j.fVal) {
-                i.lowerEdges.push(edge);
-                j.upperEdges.push(edge);
-            }
-            else if (i.fVal < j.fVal) {
-                j.lowerEdges.push(edge);
-                i.upperEdges.push(edge);
-            }
-            else {
-                i.equiEdges.push(edge);
-                j.equiEdges.push(edge);
-                edge.isEquiedge = true;
-            }
+                if (i.fVal > j.fVal) {
+                    i.lowerEdges.push(edge);
+                    j.upperEdges.push(edge);
+                }
+                else if (i.fVal < j.fVal) {
+                    j.lowerEdges.push(edge);
+                    i.upperEdges.push(edge);
+                }
+                else {
+                    i.equiEdges.push(edge);
+                    j.equiEdges.push(edge);
+                    edge.isEquiedge = true;
+                }
 
-            i.adj.forEach(k => {
-                if (j.adj.includes(k)) {
-                    var [a, b, c] = [i, j, k].sort((a, b) => { return a.fVal - b.fVal; });
-                    var containsVert = false;
-                    verts.children.forEach(v => {
-                        if (![a, b, c].includes(v))
-                            containsVert = containsVert ||
-                                pInTri(v.translation.x, v.translation.y,
-                                    a.translation.x, a.translation.y,
-                                    b.translation.x, b.translation.y,
-                                    c.translation.x, c.translation.y);
-                    });
-                    if (!containsVert) {
-                        var tri = two.makePath(a.translation.x, a.translation.y, b.translation.x, b.translation.y, c.translation.x, c.translation.y);
-                        tri.noStroke();
-                        tri.fill = GRAY;
-                        tri.opacity = 0;
-                        tri.dim = 2;
-                        tri.placed = false;
-                        tri.processed = false;
-
-                        var faces = [];
-                        edges.children.forEach(edge => {
-                            if ([a, b, c].includes(edge.faces[0]) && [a, b, c].includes(edge.faces[1]))
-                                faces.push(edge);
+                i.adj.forEach(k => {
+                    if (j.adj.includes(k)) {
+                        var [a, b, c] = [i, j, k].sort((a, b) => { return a.fVal - b.fVal; });
+                        var containsVert = false;
+                        verts.children.forEach(v => {
+                            if (![a, b, c].includes(v))
+                                containsVert = containsVert ||
+                                    pInTri(v.translation.x, v.translation.y,
+                                        a.translation.x, a.translation.y,
+                                        b.translation.x, b.translation.y,
+                                        c.translation.x, c.translation.y);
                         });
-                        faces.sort((a, b) => {
-                            if (a.faces[0] == b.faces[0]) return a.faces[1].fVal - b.faces[1].fVal;
-                            return a.faces[0].fVal - b.faces[0].fVal;
-                        });
-                        tri.oneFaces = faces;
-                        tri.zeroFaces = [a, b, c];
+                        if (!containsVert) {
+                            var tri = two.makePath(a.translation.x, a.translation.y, b.translation.x, b.translation.y, c.translation.x, c.translation.y);
+                            tri.noStroke();
+                            tri.fill = GRAY;
+                            tri.opacity = 0;
+                            tri.dim = 2;
+                            tri.placed = false;
+                            tri.processed = false;
 
-                        tris.add(tri);
+                            var faces = [];
+                            edges.children.forEach(edge => {
+                                if ([a, b, c].includes(edge.faces[0]) && [a, b, c].includes(edge.faces[1]))
+                                    faces.push(edge);
+                            });
+                            faces.sort((a, b) => {
+                                if (a.faces[0] == b.faces[0]) return a.faces[1].fVal - b.faces[1].fVal;
+                                return a.faces[0].fVal - b.faces[0].fVal;
+                            });
+                            tri.oneFaces = faces;
+                            tri.zeroFaces = [a, b, c];
+
+                            tris.add(tri);
+                        }
                     }
-                }
-            });
+                });
 
-            i.adj.push(j);
-            j.adj.push(i);
+                i.adj.push(j);
+                j.adj.push(i);
 
-            $(edge.rect._renderer.elem).unbind();
+                $(edge.rect._renderer.elem).unbind();
 
-            var rectsToRemove = [];
-            var edgesToRemove = [];
-            edges.children.forEach(tempEdge => {
-                if (doIntersect(i.translation, j.translation, tempEdge.faces[0].translation, tempEdge.faces[1].translation)) {
-                    rectsToRemove.push(tempEdge.rect);
-                    edgesToRemove.push(tempEdge);
-                }
-            });
-            edges.remove(edgesToRemove);
-            rects.remove(rectsToRemove);
+                var rectsToRemove = [];
+                var edgesToRemove = [];
+                edges.children.forEach(tempEdge => {
+                    if (doIntersect(i.translation, j.translation, tempEdge.faces[0].translation, tempEdge.faces[1].translation)) {
+                        rectsToRemove.push(tempEdge.rect);
+                        edgesToRemove.push(tempEdge);
+                    }
+                });
+                edges.remove(edgesToRemove);
+                rects.remove(rectsToRemove);
 
-            $fVal.val(lastF).select();
-            two.update();
+                $fVal.val(lastF).select();
+                two.update();
+            }
         });
     }
 
@@ -737,15 +739,17 @@ $(() => {
         }).mousedown(e => {
             e.preventDefault();
             var fVal = parseInt($fVal.val());
-            lastF = fVal;
-            tri.placed = true;
-            tri.fVal = fVal;
-            tri.oneFaces.forEach(edge => { edge.cofaces.push(tri); });
-            tri.zeroFaces.forEach(vert => { vert.cotris.push(tri); });
-            recolor(fVal);
-            $fVal.val(lastF).select();
+            if (!isNaN(fVal)) {
+                lastF = fVal;
+                tri.placed = true;
+                tri.fVal = fVal;
+                tri.oneFaces.forEach(edge => { edge.cofaces.push(tri); });
+                tri.zeroFaces.forEach(vert => { vert.cotris.push(tri); });
+                recolor(fVal);
+                $fVal.val(lastF).select();
 
-            $(tri._renderer.elem).unbind();
+                $(tri._renderer.elem).unbind();
+            }
         });
     }
 
